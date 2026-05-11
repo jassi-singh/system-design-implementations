@@ -1,6 +1,8 @@
 package ratelimiter
 
 import (
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -114,20 +116,27 @@ func TestTokenBucket(t *testing.T) {
 	})
 
 	t.Run("handles concurrent access", func(t *testing.T) {
-		tb := NewTokenBucket(10.0, 5.0)
-		done := make(chan bool)
+		clock := &fakeClock{now: time.Unix(0, 0)}
+		tb := newTokenBucketWithClock(10.0, 0.0, clock) // rate 0 so no refills
 
+		var allowed atomic.Int32
+		var wg sync.WaitGroup
 		for i := 0; i < 5; i++ {
+			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				for j := 0; j < 10; j++ {
-					tb.Allow("key-7")
+					if tb.Allow("key-7") {
+						allowed.Add(1)
+					}
 				}
-				done <- true
 			}()
 		}
+		wg.Wait()
 
-		for i := 0; i < 5; i++ {
-			<-done
+		// 50 requests, capacity 10, no refill → exactly 10 should succeed.
+		if got := allowed.Load(); got != 10 {
+			t.Fatalf("expected 10 allowed, got %d", got)
 		}
 	})
 }
