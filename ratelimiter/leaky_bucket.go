@@ -84,13 +84,14 @@ func (lb *LeakyBucket[T]) consume(qu chan T) {
 
 	for {
 		<-ticker.C()
-
-		select {
-		case item := <-qu:
-			lb.out <- item
-		default:
-			// no items to process
+	drain:
+		for i := int64(0); i < lb.rate; i++ {
+			select {
+			case item := <-qu:
+				lb.out <- item
+			default:
+				break drain
+			}
 		}
 	}
-
 }
