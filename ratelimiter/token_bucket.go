@@ -62,7 +62,6 @@ func (tb *TokenBucket) Allow(key string) bool {
 	bucket.lastRefill = now
 
 	if bucket.tokens < 1 {
-		tb.buckets[key] = bucket
 		return false
 	}
 	bucket.tokens -= 1
