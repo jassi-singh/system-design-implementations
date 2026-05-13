@@ -13,23 +13,6 @@ Leaky Bucket Algo
 - at a fixed rate queue is processed
 */
 
-type Ticker interface {
-	C() <-chan time.Time
-	Stop()
-}
-
-type realTicker struct {
-	ticker *time.Ticker
-}
-
-func (rt *realTicker) C() <-chan time.Time {
-	return rt.ticker.C
-}
-
-func (rt *realTicker) Stop() {
-	rt.ticker.Stop()
-}
-
 type LeakyBucket[T any] struct {
 	size   int64
 	rate   int64
