@@ -37,21 +37,23 @@ type LeakyBucket[T any] struct {
 	mu     sync.Mutex
 	out    chan T
 
-	ticker Ticker
+	newTicker func() Ticker
 }
 
 func NewLeakyBucket[T any](size, rate int64) *LeakyBucket[T] {
-	return newLeakyBucketWithClock[T](size, rate, &realTicker{ticker: time.NewTicker(time.Second)})
+	return newLeakyBucketWithClock[T](size, rate, func() Ticker {
+		return &realTicker{ticker: time.NewTicker(time.Second)}
+	})
 }
 
-func newLeakyBucketWithClock[T any](size, rate int64, ticker Ticker) *LeakyBucket[T] {
+func newLeakyBucketWithClock[T any](size, rate int64, newTicker func() Ticker) *LeakyBucket[T] {
 	return &LeakyBucket[T]{
-		size:   size,
-		rate:   rate,
-		queues: make(map[string]chan T),
-		mu:     sync.Mutex{},
-		out:    make(chan T),
-		ticker: ticker,
+		size:      size,
+		rate:      rate,
+		queues:    make(map[string]chan T),
+		mu:        sync.Mutex{},
+		out:       make(chan T),
+		newTicker: newTicker,
 	}
 }
 
@@ -79,7 +81,7 @@ func (lb *LeakyBucket[T]) Push(key string, item T) bool {
 }
 
 func (lb *LeakyBucket[T]) consume(qu chan T) {
-	ticker := lb.ticker
+	ticker := lb.newTicker()
 	defer ticker.Stop()
 
 	for {
