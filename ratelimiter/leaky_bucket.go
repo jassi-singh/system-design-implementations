@@ -52,12 +52,6 @@ func (lb *LeakyBucket[T]) Push(key string, item T) bool {
 		go lb.consume(qu)
 	}
 
-	qLen := len(qu)
-
-	if qLen == int(lb.size) {
-		return false
-	}
-
 	qu <- item
 
 	return true
