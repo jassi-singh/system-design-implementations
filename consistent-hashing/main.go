@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/emirpasic/gods/trees/redblacktree"
 	"github.com/emirpasic/gods/utils"
@@ -13,6 +14,7 @@ import (
 type ConsistentHashing struct {
 	sortedNodes  *redblacktree.Tree
 	virtualNodes int
+	mu           sync.RWMutex
 }
 
 type Range struct {
@@ -27,10 +29,14 @@ func New(virtualNodes int) *ConsistentHashing {
 	return &ConsistentHashing{
 		virtualNodes: virtualNodes,
 		sortedNodes:  tree,
+		mu:           sync.RWMutex{},
 	}
 }
 
 func (ch *ConsistentHashing) GetKey(key string) (string, error) {
+	defer ch.mu.RUnlock()
+	ch.mu.RLock()
+
 	hashedKey := Hash(key)
 
 	nextServer, found := ch.sortedNodes.Ceiling(hashedKey)
@@ -47,6 +53,9 @@ func (ch *ConsistentHashing) GetKey(key string) (string, error) {
 }
 
 func (ch *ConsistentHashing) AddServer(server string) []Range {
+	defer ch.mu.Unlock()
+	ch.mu.Lock()
+
 	virtualNodes := ch.getVirtualNodes(server)
 	affectedRanges := make([]Range, 0)
 
@@ -60,6 +69,9 @@ func (ch *ConsistentHashing) AddServer(server string) []Range {
 }
 
 func (ch *ConsistentHashing) RemoveServer(server string) []Range {
+	defer ch.mu.Unlock()
+	ch.mu.Lock()
+
 	virtualNodes := ch.getVirtualNodes(server)
 	affectedRanges := make([]Range, 0)
 

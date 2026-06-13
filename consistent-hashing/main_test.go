@@ -3,6 +3,7 @@ package consistenthashing
 import (
 	"fmt"
 	"sort"
+	"sync"
 	"testing"
 )
 
@@ -212,6 +213,30 @@ func TestAddServer(t *testing.T) {
 				}
 			}
 		}
+	})
+
+	t.Run("concurrent access is safe", func(t *testing.T) {
+		ch := New(10)
+		ch.AddServer("serverA")
+		ch.AddServer("serverB")
+
+		var wg sync.WaitGroup
+		for i := range 1000 {
+			wg.Add(2)
+			go func(i int) {
+				defer wg.Done()
+				ch.GetKey(fmt.Sprintf("key-%d", i))
+			}(i)
+			go func(i int) {
+				defer wg.Done()
+				if i%2 == 0 {
+					ch.AddServer(fmt.Sprintf("server-%d", i))
+				} else {
+					ch.RemoveServer(fmt.Sprintf("server-%d", i))
+				}
+			}(i)
+		}
+		wg.Wait()
 	})
 }
 
