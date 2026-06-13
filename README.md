@@ -39,7 +39,8 @@ go test ./... -race              # race detector
 
 ---
 
-## Consistent Hashing
+<details>
+<summary><h2>Consistent Hashing</h2></summary>
 
 A consistent hash ring that maps keys to servers so that adding or removing a
 server only relocates keys in the affected arc of the ring (~`K/n`), instead of
@@ -104,9 +105,12 @@ ring**. Lookup time grows only ~2× while the ring grows 100× — the logarithm
 cost of the tree `Ceiling`. `AddServer` scales linearly with the virtual-node
 count, since each join inserts one node per virtual node.
 
+</details>
+
 ---
 
-## Rate Limiters
+<details>
+<summary><h2>Rate Limiters</h2></summary>
 
 Two complementary algorithms, both keyed per client (e.g. per user or IP) so a
 single instance limits many independent callers. Each takes its time source as
@@ -150,3 +154,5 @@ Both limiters are covered by subtest suites (`t.Run`) that exercise capacity
 limits and refill/leak over simulated time; the token bucket additionally checks
 per-key isolation and concurrent access. Swapping the real clock/ticker for
 fakes keeps the suite fast and free of timing flakiness.
+
+</details>
